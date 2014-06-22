@@ -1,0 +1,31 @@
+language: python
+python:
+  - "2.7"
+
+before_install:
+  - add-apt-repository -y ppa:saltstack/salt
+  - apt-get update -y
+  - apt-get install -y --no-install-recommends swig libssl-dev \
+      libzmq-dev python-software-properties salt-master
+
+install:
+  - python setup.py install
+
+before_script:
+  - echo "Nothing to do before script"
+
+script:
+  - echo "Actually no tests yet"
+  - echo "Neither here ..."
+
+after_success:
+  - echo "We did it !"
+
+command: hivy --bind 0.0.0.0 --port 5000 --debug
+workers:
+  - build/startup-consul
+  - build/startup-salt-master
+
+notifications:
+  mail:
+    xavier.bruhiere@gmail.com

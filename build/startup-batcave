@@ -1,0 +1,5 @@
+#! /bin/bash
+set -e
+
+cd /app
+gitreceived -n -k $HOME/.ssh/batcave_id_rsa ./auth.sh ./batcave.sh >> /var/log/app.log 2>&1

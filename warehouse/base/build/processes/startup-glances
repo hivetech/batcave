@@ -1,0 +1,6 @@
+#! /bin/bash
+set -e
+
+# https://github.com/nicolargo/glances
+glances -v >> /var/log/glances.log 2>&1
+glances -s >> /var/log/glances.log 2>&1

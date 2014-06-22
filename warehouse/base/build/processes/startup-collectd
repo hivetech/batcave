@@ -1,0 +1,9 @@
+#! /bin/bash
+set -e
+
+if [ -n "$LOGSTASH_SERVER" ]; then
+  sed -i "s/logstash_server/$LOGSTASH_SERVER/g" /etc/collectd/collectd.conf
+  /usr/sbin/collectd -f
+else
+  cat
+fi

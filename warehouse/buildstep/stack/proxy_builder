@@ -1,0 +1,34 @@
+#!/bin/bash
+set -e
+
+# Chose between explicit and automatic build
+#   - If .travis.yml, shippable.yml detected, use them
+#   - Otherwize use heroku buildpacks to guess
+
+# Load common settings
+# TODO source settings.sh
+app_root=/app
+build_root=/build/stack
+
+function clean_up() {
+  apt-get clean
+  rm -rf /build
+  rm -rf /tmp/* /var/tmp/*
+  rm -rf /var/lib/apt/lists/*
+  rm -f /etc/dpkg/dpkg.cfg.d/02apt-speedup
+
+  rm -f /etc/ssh/ssh_host_*
+}
+
+# TODO .travis, wercker, shippable as fallbacks
+if [[ -f $app_root/hive.yml ]]; then
+  echo " -----> Loading Hive configuration file ..."
+  $build_root/ci_builder.sh "$app_root/hive.yml"
+else
+  echo " -----> Using heroku buildpacks ..."
+  echo " -----> Not supported yet ..."
+  #$build_root/buildpack_builder
+fi
+
+printf " -----> Cleaning up build process ...\n"
+clean_up

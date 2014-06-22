@@ -1,0 +1,7 @@
+# Fake repository for tests
+test_repo*
+Procfile
+
+*.log
+*.git
+Procfile

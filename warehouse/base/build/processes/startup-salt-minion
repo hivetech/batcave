@@ -1,0 +1,19 @@
+#! /bin/bash
+set -e
+
+if [ -z "$NODE_ID" ]; then
+  export NODE_ID="$(hostname)"
+fi
+
+if [ -n "$SALT_MASTER" ]; then
+  sed -i 's/#master:/master:/g' /etc/salt/minion
+  sed -i "s/master:.*$/master: $SALT_MASTER/g" /etc/salt/minion
+
+  sed -i 's/#id:/id:/g' /etc/salt/minion
+  sed -i "s/id:.*$/id: $NODE_ID/g" /etc/salt/minion
+
+  /usr/bin/salt-minion -l debug >>/var/log/salt-minion.log 2>&1
+else
+  # Wait forever input
+  cat
+fi
