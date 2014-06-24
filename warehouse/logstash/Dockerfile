@@ -1,4 +1,5 @@
 # Logstash
+#
 # logstash is a tool for managing events and logs
 #
 # VERSION 1.1

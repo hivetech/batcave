@@ -1,3 +1,9 @@
-#! /bin/sh
+#!/usr/bin/env bash
+set -eo pipefail
 
-echo "User $1 trying to authenticate with key $2"
+# Main (
+  readonly USERNAME=$1
+  readonly USER_KEY=$2
+
+  echo "User $USERNAME trying to authenticate with key $USER_KEY"
+# )

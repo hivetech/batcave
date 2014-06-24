@@ -3,7 +3,7 @@ set -e
 source /build/buildconfig
 set -x
 
-readonly PACKAGE="0.2.1_linux_amd64.zip"
+readonly PACKAGE="0.3.0_linux_amd64.zip"
 
 wget https://dl.bintray.com/mitchellh/consul/$PACKAGE
 unzip $PACKAGE && rm $PACKAGE

@@ -3,9 +3,9 @@ BatCave
 
 > Automatic DevOps tooling around your app
 
-`git push` your code to *Batcave* and get it wrapped back into an efficient docker
-image featuring log and perfs monitoring, service discovery and configuration
-manager setup.
+`git push` your code to *Batcave* and get the build wrapped back into a
+smart docker image featuring log and perfs monitoring, service discovery
+and configuration manager setup.
 
 The project is built on top of :
 
@@ -15,6 +15,7 @@ The project is built on top of :
 * [Passenger-docker](https://github.com/phusion/passenger-docker)
 
 Kudos for all.
+
 
 Install
 -------
@@ -42,17 +43,30 @@ $ docker run -d -P \
 With this method you will still need to use the private ssh key in
 batcave/build (just run `make ssh` in *batcave* root directory).
 
-Hive.yml
---------
 
-`hive.yml` is the configuration file to write in the app root directory,
+App build
+---------
+
+There are two ways *Batcave* can build an app.
+
+* Heroku or dokku like ([judo]() style) (not functionnal yet)
+
+Without anything particular, it will use buildpacks, and a Procfile if present
+to boot the app.
+
+* Travis-like, with explicit instructions
+
+`hive.yml` is a configuration file to write in the app root directory,
 similar to [Travis](http://travis-ci.org/) or
 [Shippable](http://shippable.com/) (see example.hive.yml), except for `command`
 and `workers`. The former should be the main program to run, while the later is
-an array of scripts to run in parallel.
+an array of scripts to start in parallel.
+
 
 Getting started
 ---------------
+
+On the build server
 
 ```console
 $ # An authentification system is on the roadmap
@@ -62,7 +76,8 @@ $ sudo gitreceived -n -k ~/.ssh/batcave_id_rsa auth.sh batcave.sh
 In another terminal
 
 ```console
-$ cd /my/app && vim hive.yml  # See example.hive.yml
+$ cd /my/app
+$ $EDITOR hive.yml  # Optional, see example.hive.yml
 $ git remote add my_batcave git@<your-server>:<project>.git
 
 $ git push -u my_batcave master

@@ -9,7 +9,7 @@ app_name=app
 function log() {
   TIME=`date +"%T"`
   printf " -----> $@\n"
-  printf "[ $TIME ] -----> $@\n" >> batcave.log
+  printf "[ $TIME ] -----> $@\n" >> /var/log/batcave.log
 }
 
 function load_yaml_property() {
