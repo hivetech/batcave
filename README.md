@@ -9,7 +9,7 @@ and configuration manager setup.
 
 The project is built on top of :
 
-* [Dokku](https://github.com/progrium/dokku) and [Gitreceived](https://github.com/flynn/gitreceived)
+* [Dokku](https://github.com/progrium/dokku), [Buildstep](https://github.com/progrium/buildstep) and [Gitreceived](https://github.com/flynn/gitreceived)
 * [Consul](http://www.consul.io/)
 * [Ansible](http://ansible.com/)
 * [Passenger-docker](https://github.com/phusion/passenger-docker)
@@ -79,6 +79,8 @@ In another terminal
 $ cd /my/app
 $ $EDITOR hive.yml  # Optional, see example.hive.yml
 $ git remote add my_batcave git@<your-server>:<project>.git
+$ # Or with batcave listening on a custom port (like in a container)
+$ gitt remote add do ssh://<user>@<ip>:<port>/<projet>.git
 
 $ git push -u my_batcave master
 

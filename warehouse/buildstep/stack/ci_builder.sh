@@ -2,9 +2,10 @@
 set -e
 
 # TODO Merge it in common.sh or whatever
-ci_file=$1
-app_root=/app
-app_name=app
+readonly CI_FILE=$1
+readonly APP_ROOT=/app
+readonly APP_NAME=app
+readonly CONSUL_CONFIG_DIR=/etc/consul.d
 
 function log() {
   TIME=`date +"%T"`
@@ -13,7 +14,7 @@ function log() {
 }
 
 function load_yaml_property() {
-  property=$(ruby -e "require 'yaml';puts YAML.load_file('$ci_file')['$1']")
+  property=$(ruby -e "require 'yaml';puts YAML.load_file('$CI_FILE')['$1']")
   echo "$property"
 }
 
@@ -31,8 +32,14 @@ function add_runit_entries() {
     script_name=$(echo $runit_script | sed 's/-\([^ ]$\)/\1/p')
 
     mkdir /etc/service/$script_name
-    cp $app_root/$line /etc/service/$script_name/run
+    cp $APP_ROOT/$line /etc/service/$script_name/run
   done <<< "$1"
+}
+
+function setup_consul_config() {
+  local readonly CONFIG_DIR=$1
+  log "[ADD] New consul services and checks : $(ls $CONFIG_DIR)"
+  mv $CONFIG_DIR/*.json $CONSUL_CONFIG_DIR
 }
 
 # https://www.hipchat.com/docs/apiv2/method/send_room_notification
@@ -47,11 +54,11 @@ function send_hipchat_notification() {
 
   log "Notifying $EMAIL ..."
   curl -X POST -H "content-type:application/json" "$API_URL/$ENDPOINT" \
-    -d '{"message": "Successfully synthetize application ${app_name}", "color": "green"}'
+    -d '{"message": "Successfully synthetize application ${APP_NAME}", "color": "green"}'
  }
 
 # TODO env property
-printf "Parsing $ci_file ...\n"
+printf "Parsing $CI_FILE ...\n"
 language=$(load_yaml_property "language")
 before_install=$(load_yaml_property "before_install")
 install=$(load_yaml_property "install")
@@ -62,26 +69,27 @@ app_command=$(load_yaml_property "command")
 workers=$(load_yaml_property "workers")
 notifications=$(load_yaml_property "notifications")
 
-cd $app_root
-process "$before_install"
-process "$install"
-process "$before_script"
-process "$script"
+cd $APP_ROOT
+[ -n "$before_install" ] && process "$before_install"
+[ -n "$install" ] && process "$install"
+[ -n "$before_script" ] && process "$before_script"
+[ -n "$script" ] && process "$script"
 [ -n "$workers" ] && add_runit_entries "$workers"
+[ -d "build/consul" ] && setup_consul_config "build/consul"
 [ $? -eq 0 ] && process "$after_success"
 
 # TODO Procfile, runit, and notifcations could be common ways to start the
 #      container (i.e. merge this section with buildpack builder)
 
 # Runit process
-mkdir -p /etc/service/${app_name}
-cat > /etc/service/${app_name}/run <<EOF
+mkdir -p /etc/service/${APP_NAME}
+cat > /etc/service/${APP_NAME}/run <<EOF
 #!/bin/bash
 set -e
-cd $app_root
-$app_command >> /var/log/${app_name}.log 2>&1
+cd $APP_ROOT
+$app_command >> /var/log/${APP_NAME}.log 2>&1
 EOF
-chmod +x /etc/service/${app_name}/run
+chmod +x /etc/service/${APP_NAME}/run
 
 # TODO Read $notification to choose notification system
 # TODO Read email, room_id and api_token from $notification

@@ -1,4 +1,4 @@
-# hivetech/base image
+# hivetech/batcave:base image
 # Base node for hivy-compliant docker images deployment
 # VERSION 0.0.3
 

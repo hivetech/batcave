@@ -1,4 +1,4 @@
-FROM hivetech/base
+FROM hivetech/batcave:base
 MAINTAINER hackliff "xavier.bruhiere@gmail.com"
 
 ADD ./stack/ /build/stack

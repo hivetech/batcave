@@ -4,7 +4,7 @@
 #
 # VERSION 1.1
 
-FROM hivetech/base
+FROM hivetech/batcave:base
 # From the work of Deni Bertovic "deni@kset.org"
 MAINTAINER Xavier Bruhiere "xavier.bruhiere@gmail.com"
 

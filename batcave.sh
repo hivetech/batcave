@@ -57,7 +57,8 @@ function clean_up() {
 
   # Specific behavior
   # TODO Parameter availalble for the user (but restricted to base images)
-  readonly BATCAVE_BASE=${BATCAVE_BASE:="hivetech/buildstep"}
+  #readonly BATCAVE_BASE=${BATCAVE_BASE:="hivetech/batcave:buildstep"}
+  readonly BATCAVE_BASE=${BATCAVE_BASE:="hivetech/batcave:buildstep"}
   readonly BATCAVE_ROOT=${BATCAVE_ROOT:="/tmp/repos"}
   readonly BATCAVE_REPO=${BATCAVE_REPO:="batcave"}
   [ -d $BATCAVE_ROOT ] || mkdir $BATCAVE_ROOT
