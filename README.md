@@ -28,20 +28,18 @@ $ # Please beware, this setup is absolutely not secure for now.
 $ cd batcave && make
 ```
 
-Alternaly you can use the docker image. Point to a working docker server
-exposed over http (add `DOCKER_OPTS="-H tcp://0.0.0.0:4243` to `/etc/default/docker` and restart
-docker : `sudo service docker restart`).
+Alternaly you can use the docker image.
 
 ```console
-$ docker run -d -P \
-  -e DOCKER_HOST=tcp://192.168.0.19:4243 \  # Your docker server
-  -e BATCAVE_BASE=hivetech/buildstep \      # The image you want to base your builds on
-  -e BATCAVE_REPO=<username> \              # It will be used to commit the image as <username>/<project>
-  hivetech/batcave
+$ docker run -d -P -e CONSUL_HOST=192.168.0.19 hivetech/batcave
 ```
 
-With this method you will still need to use the private ssh key in
-batcave/build (just run `make ssh` in *batcave* root directory).
+Then point to a working docker server exposed over http (see below for
+customization, add `DOCKER_OPTS="-H tcp://0.0.0.0:4243` to
+`/etc/default/docker` and restart : `sudo service docker restart`).
+
+With this method you still need to use the private ssh key in
+batcave/build/base/certs (just run `make ssh` in *batcave* root directory).
 
 
 App build
@@ -70,6 +68,7 @@ On the build server
 
 ```console
 $ # An authentification system is on the roadmap
+$ # We need sudo to listen on port 22
 $ sudo gitreceived -n -k ~/.ssh/batcave_id_rsa auth.sh batcave.sh
 ```
 
@@ -80,7 +79,7 @@ $ cd /my/app
 $ $EDITOR hive.yml  # Optional, see example.hive.yml
 $ git remote add my_batcave git@<your-server>:<project>.git
 $ # Or with batcave listening on a custom port (like in a container)
-$ gitt remote add do ssh://<user>@<ip>:<port>/<projet>.git
+$ git remote add do ssh://<user>@<ip>:<port>/<projet>.git
 
 $ git push -u my_batcave master
 
@@ -89,6 +88,28 @@ $ git push -u my_batcave master
 
 If everything went fine, we have now a `batcave/<project>` docker container
 with our application, built from `batcave/warehouse/buildstep`.
+
+Customization
+-------------
+
+`Batcave` reads the following values from [consul kv
+storage](http://www.consul.io/intro/getting-started/kv.html):
+
+* `<user>/docker/host` (default `unix:///var/run/docker.sock`). Point to the
+  docker server where images are built.
+* `<user>/docker/repo` (default `batcave`). The first part of docker images,
+  providing the repository where images could be pushed and stored.
+* `<user>/base` (default `hivetech/batcave:buildstep`). The image used to build
+  applications. It must include specific scripts so for now I recommend to
+  stick with default.
+* `<user>/push` (default `""`). If set to true, `Batcave` will try to push the
+  image to the provided repository. You must be already logged in (`docker
+  login`).
+
+Workers and Services
+--------------------
+
+Not stable yet ...
 
 
 Built images usage
@@ -100,7 +121,7 @@ Prepare the server
 $ # Prepare the server for service orchestration (optional)
 $ consul agent -server -bootstrap -data-dir /tmp/consul -node=master -client 0.0.0.0
 
-$ # This image compiles logstash, elasticsearch and kibana
+$ # This image combines logstash, elasticsearch and kibana (even more optional)
 $ docker run --name logstash -p 9292:9292 -d -t hivetech/logstash
 ```
 
@@ -109,8 +130,8 @@ Kickoff the app
 ```console
 # Skipping those variables will prevent services from running
 docker run -d --name myapp \
-  -e CONSUL_MASTER=192.168.0.11   # Will join the consul master autmatically \
-  -e LOGSTASH_SERVER=172.17.0.3   # Where to ship logs \
+  -e CONSUL_HOST=192.168.0.11     # Will join the consul master autmatically \
+  -e LOGSTASH_HOST=172.17.0.3     # Where to ship logs \
   -e NODE_ID=myapp                # Identify the new node \
-  hivetech/base /sbin/my_init --enable-insecure-key
+  hivetech/batcave:base /sbin/my_init --enable-insecure-key
 ```

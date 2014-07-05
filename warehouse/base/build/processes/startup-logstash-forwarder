@@ -7,7 +7,7 @@ set -e
 cat << EOF > /tmp/lumberjack.json
 {
   "network": {
-    "servers": [ "$LOGSTASH_SERVER:5043" ],
+    "servers": [ "$LOGSTASH_HOST:5043" ],
     "ssl certificate": "/opt/certs/logstash-forwarder.crt",
     "ssl key": "/opt/certs/logstash-forwarder.key",
     "ssl ca": "/opt/certs/logstash-forwarder.crt"
@@ -21,7 +21,7 @@ cat << EOF > /tmp/lumberjack.json
 }
 EOF
 
-if [ -n "$LOGSTASH_SERVER" ]; then
+if [ -n "$LOGSTASH_HOST" ]; then
   /usr/local/bin/logstash-forwarder -config /tmp/lumberjack.json >> /var/log/logstash-forwarder.log 2>&1
 else
   # Wait forever input

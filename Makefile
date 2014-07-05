@@ -12,6 +12,9 @@ install:
 	sudo cp auth.sh batcave.sh /usr/local/bin
 	[ -d /etc/service/sshd ] && rm -r /etc/service/sshd
 	cp build/batcave_id_rsa ~/.ssh
+	# Install https://github.com/stedolan/jq
+	wget http://stedolan.github.io/jq/download/linux64/jq
+	chmod 755 jq && sudo mv jq /usr/local/bin
 
 ssh:
 	eval `ssh-agent -s`

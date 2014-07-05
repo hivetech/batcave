@@ -54,6 +54,9 @@ ENV GOPATH /go
 # https://github.com/elasticsearch/logstash-forwarder
 RUN /build/services/lumberjack.sh
 
+# Install the process wrapper
+RUN go get -t github.com/hivetech/envconsul
+
 # Clean up APT when done.
 RUN /build/cleanup.sh
 

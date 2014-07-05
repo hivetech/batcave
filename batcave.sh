@@ -1,5 +1,16 @@
 #!/usr/bin/env bash
 set -eo pipefail
+set -o errexit
+[[ $BATCAVE_TRACE ]] && set -x
+
+# Magic variables
+__PROGRAME__=$(basename $0)
+__DIR__="$(cd "$(dirname "${0}")"; echo $(pwd))"
+__BASE__="$(basename "${0}")"
+__FILE__="${__DIR__}/${__BASE__}"
+__ARGS__="$@"
+
+set -o nounset
 
 
 function usage() {
@@ -22,6 +33,14 @@ function log() {
   #FIXME [ -n "$LOGFILE" ] && printf "[ $TIME ] -----> $@\n" >> $LOGFILE
 }
 
+function read_consul_parameter() {
+  local readonly KEY=$1
+  local readonly DEFAULT=$2
+  local RESULT=$(wget -qO- http://$CONSUL_HOST:$CONSUL_PORT/v1/kv/$KEY | jq -r '.[0].Value' | base64 --decode)
+  [ -n "$RESULT" ] || RESULT=$DEFAULT
+  echo $RESULT
+}
+
 function build_image() {
   local path=$1; local commit=$2; local username=$3
   log "Building $path ... (commit $commit)"
@@ -39,6 +58,13 @@ function build_image() {
   test $(docker wait $id) -eq 0
   log "Commiting final $id as $IMAGE"
   docker commit $id $IMAGE > /dev/null
+  docker commit $id $IMAGE:$commit > /dev/null
+
+  readonly SHOULD_PUSH=$(read_consul_parameter "user/push" "")
+  if [[ ("$SHOULD_PUSH" != "") && (-f ~/.dockercfg) ]]; then
+    log "Pushing image to repository $BATCAVE_REPO"
+    docker push $IMAGE
+  fi
 }
 
 function clean_up() {
@@ -46,29 +72,24 @@ function clean_up() {
   docker ps -a | grep 'Exit' | awk '{print $1}' | xargs docker rm &> /dev/null &
   # delete unused images
   docker images | grep '<none>' | awk '{print $3}' | xargs docker rmi &> /dev/null &
+  # delete deprecated images
+  docker images | grep 'months' | awk '{print $3}' | xargs docker rmi &> /dev/null &
 }
 
 # Main (
 
-  # Generic setup
-  readonly PROGRAME=$(basename $0)
-  readonly PROGDIR=$(readlink -m $(dirname $0))
-  readonly ARGS="$@"
+  # TODO Get real user name
+  readonly DOCKER_HOST=$(read_consul_parameter "user/docker/host" "unix:///var/run/docker.sock")
+  alias docker="docker --host ${DOCKER_HOST}"
 
   # Specific behavior
-  # TODO Parameter availalble for the user (but restricted to base images)
-  #readonly BATCAVE_BASE=${BATCAVE_BASE:="hivetech/batcave:buildstep"}
-  readonly BATCAVE_BASE=${BATCAVE_BASE:="hivetech/batcave:buildstep"}
+  readonly CONSUL_HOST=${CONSUL_HOST:="localhost"}
+  readonly CONSUL_PORT=${CONSUL_PORT:="8500"}
   readonly BATCAVE_ROOT=${BATCAVE_ROOT:="/tmp/repos"}
-  readonly BATCAVE_REPO=${BATCAVE_REPO:="batcave"}
+  readonly BATCAVE_BASE=$(read_consul_parameter "user/base" "hivetech/batcave:buildstep")
+  readonly BATCAVE_REPO=$(read_consul_parameter "user/docker/repo" "batcave")
   [ -d $BATCAVE_ROOT ] || mkdir $BATCAVE_ROOT
   [[ -f $BATCAVE_ROOT/batcaverc ]] && source $BATCAVE_ROOT/batcaverc
-  [[ $BATCAVE_TRACE ]] && set -x
-
-  # FIXME Not tested yet
-  # TODO Make it user defined
-  export DOCKER_HOST=${DOCKER_HOST:="unix:///var/run/docker.sock"}
-  alias docker="docker --host ${DOCKER_HOST}"
 
   log "[DEBUG] Using $BATCAVE_BASE as image foundation"
   log "[DEBUG] Setting $BATCAVE_ROOT as Batcave root directory"
@@ -83,4 +104,5 @@ function clean_up() {
   # TODO Image name: Change BATCAVE_REPO by USERNAME (Hivy compliance)
   build_image $1 $2 $BATCAVE_REPO
   log "Done, application cell successfully synthetize !"
+
 # )

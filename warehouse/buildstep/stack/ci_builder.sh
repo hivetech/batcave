@@ -38,7 +38,7 @@ function add_runit_entries() {
 
 function setup_consul_config() {
   local readonly CONFIG_DIR=$1
-  log "[ADD] New consul services and checks : $(ls $CONFIG_DIR)"
+  log "[ ADD ] New consul services and checks : $(ls $CONFIG_DIR)"
   mv $CONFIG_DIR/*.json $CONSUL_CONFIG_DIR
 }
 

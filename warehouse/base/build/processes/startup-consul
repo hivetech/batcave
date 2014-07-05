@@ -5,12 +5,10 @@ if [ -z "$NODE_ID" ]; then
   export NODE_ID="$(hostname)"
 fi
 
-#test -d /etc/consul.d || mkdir /etc/consul.d
-
-if [ -n "$CONSUL_MASTER" ]; then
+if [ -n "$CONSUL_HOST" ]; then
   /usr/local/bin/consul agent \
-    -join $CONSUL_MASTER \
-    -node $NODE_ID \
+    -join $CONSUL_HOST \
+    -node $NODE_ID-$(hostname) \
     -data-dir /tmp/consul \
     -bind 0.0.0.0 \
     -config-dir /etc/consul.d >> /var/log/consul.log 2>&1
