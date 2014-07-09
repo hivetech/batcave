@@ -7,6 +7,7 @@ install:
 	# TODO Install docker
 	# TODO Install consul
 	# TODO Install go
+	# TODO Install python
 	# TODO Install Ansible
 	go get -u github.com/flynn/gitreceived
 	sudo cp auth.sh batcave.sh /usr/local/bin
@@ -15,6 +16,7 @@ install:
 	# Install https://github.com/stedolan/jq
 	wget http://stedolan.github.io/jq/download/linux64/jq
 	chmod 755 jq && sudo mv jq /usr/local/bin
+	python setup.py install
 
 ssh:
 	eval `ssh-agent -s`

@@ -42,21 +42,6 @@ function setup_consul_config() {
   mv $CONFIG_DIR/*.json $CONSUL_CONFIG_DIR
 }
 
-# https://www.hipchat.com/docs/apiv2/method/send_room_notification
-function send_hipchat_notification() {
-  # TODO Test Access (see doc)
-  # TODO Custom color for build status
-  local readonly EMAIL=$1
-  local readonly ROOM_ID=$2
-  local readonly API_TOKEN=$3
-  local readonly API_URL="https://api.hipchat.com"
-  local readonly ENDPOINT="v2/room/$ROOM_ID/notification?auth_token=$API_TOKEN"
-
-  log "Notifying $EMAIL ..."
-  curl -X POST -H "content-type:application/json" "$API_URL/$ENDPOINT" \
-    -d '{"message": "Successfully synthetize application ${APP_NAME}", "color": "green"}'
- }
-
 # TODO env property
 printf "Parsing $CI_FILE ...\n"
 language=$(load_yaml_property "language")
@@ -90,10 +75,4 @@ cd $APP_ROOT
 $app_command >> /var/log/${APP_NAME}.log 2>&1
 EOF
 chmod +x /etc/service/${APP_NAME}/run
-
-# TODO Read $notification to choose notification system
-# TODO Read email, room_id and api_token from $notification
-#send_hipchat_notification "xavier.bruhiere@gmail.com" "Room_id" "api_key16156165151"
-# TODO Mail notifications
-# TODO Pushbullet notifications
 log "Done."

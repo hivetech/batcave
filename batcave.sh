@@ -52,19 +52,9 @@ function build_image() {
   log "Commiting $id as $IMAGE"
   docker commit $id $IMAGE > /dev/null
   [[ -d $CACHE_DIR ]] || mkdir $CACHE_DIR
-  log "Building application ..."
-  id=$(docker run -d -v $CACHE_DIR:/cache $IMAGE /build/stack/proxy_builder)
-  docker attach $id
-  test $(docker wait $id) -eq 0
-  log "Commiting final $id as $IMAGE"
-  docker commit $id $IMAGE > /dev/null
-  docker commit $id $IMAGE:$commit > /dev/null
 
-  readonly SHOULD_PUSH=$(read_consul_parameter "user/push" "")
-  if [[ ("$SHOULD_PUSH" != "") && (-f ~/.dockercfg) ]]; then
-    log "Pushing image to repository $BATCAVE_REPO"
-    docker push $IMAGE
-  fi
+  log "Scheduling application build ..."
+  batcave --username $username --app $APP --commit $commit
 }
 
 function clean_up() {
@@ -77,6 +67,8 @@ function clean_up() {
 }
 
 # Main (
+  readonly PROJECT=$1
+  readonly COMMIT=$2;
 
   # TODO Get real user name
   readonly DOCKER_HOST=$(read_consul_parameter "user/docker/host" "unix:///var/run/docker.sock")
@@ -102,7 +94,7 @@ function clean_up() {
   log "[DEBUG] Push User: $RECEIVE_USER"
   log "[DEBUG] Push Repo: $RECEIVE_REPO"
   # TODO Image name: Change BATCAVE_REPO by USERNAME (Hivy compliance)
-  build_image $1 $2 $BATCAVE_REPO
-  log "Done, application cell successfully synthetize !"
+  build_image $PROJECT $COMMIT $BATCAVE_REPO
+  log "Done."
 
 # )

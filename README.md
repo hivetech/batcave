@@ -68,8 +68,8 @@ On the build server
 
 ```console
 $ # An authentification system is on the roadmap
-$ # We need sudo to listen on port 22
-$ sudo gitreceived -n -k ~/.ssh/batcave_id_rsa auth.sh batcave.sh
+$ # You will need sudo to listen on default port 22
+$ gitreceived -p 2222 -n -k ~/.ssh/batcave_id_rsa auth.sh batcave.sh
 ```
 
 In another terminal
