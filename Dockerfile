@@ -1,6 +1,9 @@
 # hivetech/batcave image
 #
-# Docker run -d --name batcave -e DOCKER_HOST=tcp://192.168.0.19:4243 hivetech/batcave
+# Docker run -d --name batcave \
+#   -e CONSUL_HOST=192.168.0.19 \
+#   -e REDIS_HOST=172.17.0.23 \
+#   hivetech/batcave
 # VERSION 0.0.2
 
 # Administration ---------------------------------------
@@ -16,7 +19,9 @@ RUN chmod +x /usr/local/bin/docker
 # Install Batcave --------------------------------------
 ADD build /build
 ADD . /app
-RUN cd /app && make install && mkdir /etc/service/batcave
-ADD /build/startup-batcave /etc/service/batcave/run
+RUN cd /app && make install
+RUN mkdir /etc/service/batcave && mkdir /etc/service/worker && \
+  mv /build/startup-batcave /etc/service/batcave/run && \
+  mv /build/startup-worker /etc/service/worker/run
 
 EXPOSE 22

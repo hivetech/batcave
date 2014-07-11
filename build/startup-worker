@@ -1,0 +1,10 @@
+#! /bin/bash
+set -e
+
+[ -n "$REDIS_PORT" ] || REDIS_PORT=6379
+if [ -n "$REDIS_HOST" ]; then
+  rqworker --url redis://$REDIS_HOST:$REDIS_PORT --verbose >> /var/log/rqworker.log 2>&1
+else
+  # Wait forever
+  cat
+fi
