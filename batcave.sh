@@ -36,52 +36,55 @@ function log() {
 function read_consul_parameter() {
   local readonly KEY=$1
   local readonly DEFAULT=$2
-  local RESULT=$(wget -qO- http://$CONSUL_HOST:$CONSUL_PORT/v1/kv/$KEY | jq -r '.[0].Value' | base64 --decode)
+  local RESULT=$(wget -qO- http://${CONSUL_HOST}:${CONSUL_PORT}/v1/kv/$KEY | jq -r '.[0].Value' | base64 --decode)
   [ -n "$RESULT" ] || RESULT=$DEFAULT
   echo $RESULT
 }
 
 function build_image() {
-  local path=$1; local commit=$2; local username=$3
+  local path=$1; local commit=$2
   log "Building $path ... (commit $commit)"
 
-  APP="$1"; IMAGE="$username/$APP"; CACHE_DIR="$BATCAVE_ROOT/$APP/cache"
-  log "Streaming app into $username/$APP ..."
-  id=$(cat | docker run -i -a stdin ${BATCAVE_BASE} /bin/bash -c "mkdir -p /app && tar -xC /app")
-  test $(docker wait $id) -eq 0
+  APP="$1"; IMAGE="$RECEIVE_USER/$APP"; CACHE_DIR="$BATCAVE_ROOT/$APP/cache"
+  log "Streaming app into $RECEIVE_USER/$APP ..."
+  id=$(cat | docker --host $DOCKER_HOST run -i -a stdin ${BATCAVE_BASE} /bin/bash -c "mkdir -p /app && tar -xC /app")
+  test $(docker --host $DOCKER_HOST wait $id) -eq 0
   log "Commiting $id as $IMAGE"
-  docker commit $id $IMAGE > /dev/null
+  docker --host ${DOCKER_HOST} commit $id $IMAGE > /dev/null
   [[ -d $CACHE_DIR ]] || mkdir $CACHE_DIR
 
   log "Scheduling application build ..."
-  batcave --username $username --app $APP --commit $commit
+  batcave --username $RECEIVE_USER --app $APP --commit $commit
 }
 
 function clean_up() {
   # delete all non-running container
-  docker ps -a | grep 'Exit' | awk '{print $1}' | xargs docker rm &> /dev/null &
+  docker --host $DOCKER_HOST ps -a | grep 'Exit' | awk '{print $1}' | xargs docker --host $DOCKER_HOST rm &> /dev/null &
   # delete unused images
-  docker images | grep '<none>' | awk '{print $3}' | xargs docker rmi &> /dev/null &
+  docker --host $DOCKER_HOST images | grep '<none>' | awk '{print $3}' | xargs docker --host $DOCKER_HOST rmi &> /dev/null &
   # delete deprecated images
-  docker images | grep 'months' | awk '{print $3}' | xargs docker rmi &> /dev/null &
+  docker --host $DOCKER_HOST images | grep 'months' | awk '{print $3}' | xargs docker --host $DOCKER_HOST rmi &> /dev/null &
 }
 
 # Main (
   readonly PROJECT=$1
   readonly COMMIT=$2;
 
-  # TODO Get real user name
-  readonly DOCKER_HOST=$(read_consul_parameter "user/docker/host" "unix:///var/run/docker.sock")
-  alias docker="docker --host ${DOCKER_HOST}"
-
   # Specific behavior
+  readonly LOG_PATH=${LOG_PATH:="/tmp"}
+  readonly RECEIVE_USER=${RECEIVE_USER:="batcave"}
   readonly CONSUL_HOST=${CONSUL_HOST:="localhost"}
   readonly CONSUL_PORT=${CONSUL_PORT:="8500"}
   readonly BATCAVE_ROOT=${BATCAVE_ROOT:="/tmp/repos"}
-  readonly BATCAVE_BASE=$(read_consul_parameter "user/base" "hivetech/batcave:buildstep")
-  readonly BATCAVE_REPO=$(read_consul_parameter "user/docker/repo" "batcave")
+  readonly BATCAVE_BASE=$(read_consul_parameter "batcave/$RECEIVE_USER/base" "hivetech/batcave:buildstep")
+  readonly BATCAVE_REPO=$(read_consul_parameter "batcave/$RECEIVE_USER/docker/repo" "batcave")
   [ -d $BATCAVE_ROOT ] || mkdir $BATCAVE_ROOT
   [[ -f $BATCAVE_ROOT/batcaverc ]] && source $BATCAVE_ROOT/batcaverc
+
+  # TODO Get real user name
+  readonly DOCKER_HOST=$(read_consul_parameter "batcave/$RECEIVE_USER/docker/host" "unix:///var/run/docker.sock")
+  # FIXME Not accessible in functions
+  # alias docker="docker --host ${DOCKER_HOST}"
 
   log "[DEBUG] Using $BATCAVE_BASE as image foundation"
   log "[DEBUG] Setting $BATCAVE_ROOT as Batcave root directory"
@@ -93,8 +96,7 @@ function clean_up() {
 
   log "[DEBUG] Push User: $RECEIVE_USER"
   log "[DEBUG] Push Repo: $RECEIVE_REPO"
-  # TODO Image name: Change BATCAVE_REPO by USERNAME (Hivy compliance)
-  build_image $PROJECT $COMMIT $BATCAVE_REPO
+  build_image $PROJECT $COMMIT
   log "Done."
 
 # )

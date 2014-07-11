@@ -25,59 +25,74 @@ class Builder(object):
     # batcave.sh should have exported it
     _batcave_root = os.environ.get('BATCAVE_ROOT', '/tmp/repos')
 
-    def build_app_container(self, username, app, tag):
+    def build_app_container(self, username, app, tag, logpath):
         ''' Build the given application within a docker image '''
-        self._docker = docker.Client(
-            base_url=os.environ.get('DOCKER_HOST', self._default_docker_host),
-            version='1.13', timeout=10
+        log_setup = dna.logging.setup(
+            level=os.environ.get('LOG_LEVEL', 'info'),
+            filename='{}/{}.log'.format(logpath, app),
+            show_log=False
         )
-        log.debug("Docker setup", status=self._docker.ping())
 
-        self._consul = Consul(host=os.environ.get('CONSUL_HOST', 'localhost'))
-
-        cache_directory = '{}/{}'.format(self._batcave_root, app)
-        image = '{}/{}'.format(username, app)
-
-        log.info('Building application ...')
-        container = self._docker.create_container(
-            image,
-            detach=True,
-            volumes=[cache_directory],
-            command="/build/stack/proxy_builder"
-        )
-        self._docker.start(
-            container['Id'],
-            binds={'/cache': {'bind': cache_directory, 'ro': False}}
-        )
-        log.debug(container)
-        log.info('Streaming logs ...')
-        log.info('Waiting container to finish ...')
-        code = self._docker.wait(container['Id'])
-        log.info('Container returned {}'.format(code))
-        build_logs = self._docker.logs(container['Id'])
-        log.debug(build_logs)
-        log.info('Commiting final {} as {}'.format(container['Id'], image))
-        self._docker.commit(container['Id'], repository=image, tag='latest')
-        self._docker.commit(container['Id'], repository=image, tag=tag)
-
-        result = self._consul.storage.get('user/push')
-        if (code == 0 and
-                os.path.exists(os.path.expanduser('~/.docker.cfg')) and
-                'error' not in result):
-            # NOTE stream parameter ?
-            log.info('Pushing image', image=image)
-            self._docker.push(image)
-
-        result = self._consul.storage.get('user/hipchat')
-        if 'error' not in result:
-            hipchat = batcave.notification.HipchatBot(
-                'Lab', name='Botcave', api_key=result[0]['Value']
+        with log_setup.applicationbound():
+            self._consul = Consul(
+                host=os.environ.get('CONSUL_HOST', 'localhost')
             )
-            hipchat.notify(image, code)
 
-        log.debug(self._default_docker_host)
-        log.debug(self._batcave_root)
+            docker_host = self._consul.storage.get(
+                'batcave/{}/docker/host'.format(username))
+            docker_host = (self._default_docker_host
+                           if 'error' in docker_host
+                           else docker_host[0]['Value'])
+            self._docker = docker.Client(
+                base_url=docker_host,
+                version='1.13', timeout=10
+            )
+            log.debug("Docker setup", status=self._docker.ping())
 
-        if code != 0:
-            raise BuildFailed('build return code {}'.format(code))
-        return code
+            cache_directory = '{}/{}'.format(self._batcave_root, app)
+            image = '{}/{}'.format(username, app)
+
+            log.info('Building application ...')
+            container = self._docker.create_container(
+                image,
+                detach=True,
+                volumes=[cache_directory],
+                command="/build/stack/proxy_builder"
+            )
+            self._docker.start(
+                container['Id'],
+                binds={'/cache': {'bind': cache_directory, 'ro': False}}
+            )
+            log.debug(container)
+            log.info('Streaming logs ...')
+            log.info('Waiting container to finish ...')
+            code = self._docker.wait(container['Id'])
+            log.info('Container returned {}'.format(code))
+            build_logs = self._docker.logs(container['Id'])
+            log.debug(build_logs)
+            log.info('Commiting final {} as {}'.format(container['Id'], image))
+            self._docker.commit(container['Id'], repository=image)
+            self._docker.commit(container['Id'], repository=image, tag=tag)
+
+            should_push = self._consul.storage.get(
+                'batcave/{}/push'.format(username))
+            if code == 0 and 'error' not in should_push:
+                # NOTE stream parameter ?
+                log.info('Pushing image', image=image)
+                self._docker.push(image)
+
+            api_key = self._consul.storage.get(
+                'batcave/{}/hipchat/apikey'.format(username))
+            room_id = self._consul.storage.get(
+                'batcave/{}/hipchat/room'.format(username))
+            if 'error' not in api_key and 'error' not in room_id:
+                hipchat = batcave.notification.HipchatBot(
+                    room_id[0]['Value'],
+                    name='Botcave',
+                    api_key=api_key[0]['Value']
+                )
+                hipchat.notify(image, code)
+
+            if code != 0:
+                raise BuildFailed('build return code {}'.format(code))
+            return code

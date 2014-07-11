@@ -5,16 +5,25 @@ BatCave
 
 `git push` your code to *Batcave* and get the build wrapped back into a
 smart docker image featuring log and perfs monitoring, service discovery
-and configuration manager setup.
+and configuration manager setup. Some features :
+
+* Simple workflow
+* Powerful containers
+* Queued builds on server
+* Automatic push on success
+* [Hipchat](http://hipchat.com/) notifications
+* Simple customization with [consul kv store](http://www.consul.io/intro/getting-started/kv.html)
+* heroku-like explicit(zero-configuration) or travis-like build instructions
 
 The project is built on top of :
 
+* [Docker](http://docker.io/)
 * [Dokku](https://github.com/progrium/dokku), [Buildstep](https://github.com/progrium/buildstep) and [Gitreceived](https://github.com/flynn/gitreceived)
 * [Consul](http://www.consul.io/)
 * [Ansible](http://ansible.com/)
 * [Passenger-docker](https://github.com/phusion/passenger-docker)
 
-Kudos for all.
+Kudos for all !
 
 
 Install
@@ -26,12 +35,17 @@ You need [docker](https://docs.docker.com/) and [Go](http://golang.org/) install
 $ git clone https://github.com/hivetech/batcave.git
 $ # Please beware, this setup is absolutely not secure for now.
 $ cd batcave && make
+$ # If you want to use automatic image push :
+$ docker login
 ```
 
 Alternaly you can use the docker image.
 
 ```console
-$ docker run -d -P -e CONSUL_HOST=192.168.0.19 hivetech/batcave
+$ docker run -d -P \
+  -e CONSUL_HOST=192.168.0.19 \
+  -e REDIS_HOST=172.17.0.2 \
+  hivetech/batcave
 ```
 
 Then point to a working docker server exposed over http (see below for
@@ -68,8 +82,9 @@ On the build server
 
 ```console
 $ # An authentification system is on the roadmap
-$ # You will need sudo to listen on default port 22
-$ gitreceived -p 2222 -n -k ~/.ssh/batcave_id_rsa auth.sh batcave.sh
+$ gitreceived -p 2222 -k ~/.ssh/batcave_id_rsa "bash auth.sh" batcave.sh
+$ # In order to user custom parameters (optional), we need a consul server
+$ consul agent -server -bootstrap -data-dir /tmp/consul -node=master -client 0.0.0.0
 ```
 
 In another terminal
@@ -79,7 +94,7 @@ $ cd /my/app
 $ $EDITOR hive.yml  # Optional, see example.hive.yml
 $ git remote add my_batcave git@<your-server>:<project>.git
 $ # Or with batcave listening on a custom port (like in a container)
-$ git remote add do ssh://<user>@<ip>:<port>/<projet>.git
+$ git remote add my_batcave ssh://<user>@<ip>:<port>/<projet>.git
 
 $ git push -u my_batcave master
 
@@ -95,21 +110,33 @@ Customization
 `Batcave` reads the following values from [consul kv
 storage](http://www.consul.io/intro/getting-started/kv.html):
 
-* `<user>/docker/host` (default `unix:///var/run/docker.sock`). Point to the
+* `batcave/<user>/docker/host` (default `unix:///var/run/docker.sock`). Point to the
   docker server where images are built.
 * `<user>/docker/repo` (default `batcave`). The first part of docker images,
   providing the repository where images could be pushed and stored.
-* `<user>/base` (default `hivetech/batcave:buildstep`). The image used to build
+* `batcave/<user>/base` (default `hivetech/batcave:buildstep`). The image used to build
   applications. It must include specific scripts so for now I recommend to
   stick with default.
-* `<user>/push` (default `""`). If set to true, `Batcave` will try to push the
+* `batcave/<user>/push` (default `""`). If set to true, `Batcave` will try to push the
   image to the provided repository. You must be already logged in (`docker
   login`).
+* `batcave/<user>/hipchat/{apikey,room}`. If *batcave* found an api key here, it will post
+  the build result to the given room.
+
+```console
+$ # Enable automatic push
+$ curl -X PUT -d 'true' http://localhost:8500/v1/kv/batcave/me/push
+```
 
 Workers and Services
 --------------------
 
-Not stable yet ...
+Every json files in `build/consul` directory will be considered as [consul agent
+checks and services configuration](http://www.consul.io/docs/agent/basics.html).
+
+This is a first, simple shot and it is likely change in the futur. This is indeed
+an important step as it allows a completely automated service discovery with my
+fork of [envconsul](https://github.com/hivetech/envconsul). More on that soon ...
 
 
 Built images usage

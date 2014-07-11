@@ -17,6 +17,8 @@ install:
 	wget http://stedolan.github.io/jq/download/linux64/jq
 	chmod 755 jq && sudo mv jq /usr/local/bin
 	python setup.py install
+	pip install pyconsul
+	pip install requests==2.2.1
 
 ssh:
 	eval `ssh-agent -s`

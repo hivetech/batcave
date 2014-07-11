@@ -8,7 +8,7 @@
 
 import multiprocessing
 import setuptools
-from intuition import (
+from batcave import (
     __version__, __author__, __licence__, __project__
 )
 
@@ -18,8 +18,7 @@ REQUIREMENTS = [
     'redis',
     'rq',
     'docker-py',
-    'dna',
-    'pyconsul'
+    'dna'
 ]
 
 
@@ -44,19 +43,18 @@ setuptools.setup(
     url="https://github.com/hivetech/batcave",
     entry_points={
         'console_scripts': [
-            'batcave = batcave.__main__:main',
+            'batcave = batcave.__main__:schedule',
         ],
     },
     classifiers=[
         'Development Status :: 2 - Pre-Alpha',
-        'License :: OSI Approved :: MIT',
+        'License :: OSI Approved :: MIT Licence',
         'Natural Language :: English',
         'Programming Language :: Python',
         'Programming Language :: Python :: 2.7',
         'Operating System :: OS Independent',
         'Intended Audience :: Science/Research',
-        'Topic :: Office/Business :: Financial',
-        'Topic :: Scientific/Engineering :: Information Analysis',
-        'Topic :: System :: Distributed Computing',
+        'Topic :: Software Development',
+        'Topic :: Software Development :: Build Tools'
     ]
 )
