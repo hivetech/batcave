@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
-set -eo pipefail
-set -o errexit
+# From http://redsymbol.net/articles/unofficial-bash-strict-mode/
+set -euo pipefail
+#IFS=$'\n\t'
 [[ $BATCAVE_TRACE ]] && set -x
 
 # Magic variables

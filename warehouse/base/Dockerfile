@@ -3,7 +3,7 @@
 # VERSION 0.0.3
 
 # Administration
-FROM phusion/passenger-customizable:0.9.10
+FROM phusion/passenger-customizable:0.9.11
 MAINTAINER hackliff "xavier.bruhiere@gmail.com"
 
 # Set correct environment variables.

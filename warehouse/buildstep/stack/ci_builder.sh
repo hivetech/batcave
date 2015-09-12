@@ -27,9 +27,9 @@ function process() {
 
 function add_runit_entries() {
   while read -r line; do
-    log "[ ADD ] $line"
     runit_script=$(basename $line)
     script_name=$(echo $runit_script | sed 's/-\([^ ]$\)/\1/p')
+    log "[ ADD ] $line as $script_name process"
 
     mkdir /etc/service/$script_name
     cp $APP_ROOT/$line /etc/service/$script_name/run

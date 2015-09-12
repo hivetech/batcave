@@ -1,5 +1,4 @@
 #!/bin/bash
-#
 # Inspired from https://github.com/denibertovic/logstash-forwarder-dockerfile
 set -e
 
@@ -10,7 +9,8 @@ cat << EOF > /tmp/lumberjack.json
     "servers": [ "$LOGSTASH_HOST:5043" ],
     "ssl certificate": "/opt/certs/logstash-forwarder.crt",
     "ssl key": "/opt/certs/logstash-forwarder.key",
-    "ssl ca": "/opt/certs/logstash-forwarder.crt"
+    "ssl ca": "/opt/certs/logstash-forwarder.crt",
+    "timeout": 15
   },
   "files": [
     {

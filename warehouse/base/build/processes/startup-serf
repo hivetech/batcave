@@ -1,12 +1,8 @@
 #! /bin/bash
 set -e
 
-if [ -z "$NODE_ID" ]; then
-  export NODE_ID="$(hostname)"
-fi
-
 if [ -n "$NODE_ROLE" ]; then
-  /usr/local/bin/serf agent -node $NODE_ID -tag role=$NODE_ROLE >>/var/log/serf.log 2>&1
+  /usr/local/bin/serf agent -node $(hostname) -tag role=$NODE_ROLE >>/var/log/serf.log 2>&1
 else
   # Wait forever input
   cat
